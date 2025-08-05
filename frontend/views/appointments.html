@@ -1,0 +1,59 @@
+<div id="appointments-view">
+  <h2>Διαχείριση Ραντεβού</h2>
+  
+  <div class="card">
+    <h3>Νέο Ραντεβού</h3>
+    <form id="appointment-form">
+      <div class="form-group">
+        <label for="car-select">Αυτοκίνητο:</label>
+        <select id="car-select" required>
+          <option value="">Επιλέξτε αυτοκίνητο</option>
+          <!-- JS will populate -->
+        </select>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="appointment-date">Ημερομηνία:</label>
+          <input type="date" id="appointment-date" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="appointment-time">Ώρα:</label>
+          <select id="appointment-time" required>
+            <option value="08:00">08:00</option>
+            <option value="10:00">10:00</option>
+            <option value="12:00">12:00</option>
+            <option value="14:00">14:00</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Λόγος:</label>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="reason" value="service" checked> Σέρβις
+          </label>
+          <label>
+            <input type="radio" name="reason" value="repair"> Επιδιόρθωση
+          </label>
+        </div>
+      </div>
+      
+      <div class="form-group" id="problem-description-group" style="display: none;">
+        <label for="problem-description">Περιγραφή Προβλήματος:</label>
+        <textarea id="problem-description"></textarea>
+      </div>
+      
+      <button type="submit" class="btn-primary">Καταχώρηση</button>
+    </form>
+  </div>
+  
+  <div class="card">
+    <h3>Τα Ραντεβού μου</h3>
+    <div id="appointments-list">
+      <!-- JS will populate -->
+    </div>
+  </div>
+</div>

@@ -1,0 +1,56 @@
+{
+  "name": "garage-management-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Backend for Car Garage Management System",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.0",
+    "@mui/lab": "^7.0.0-beta.15",
+    "@mui/material": "^7.3.0",
+    "axios": "^1.6.2",
+    "cors": "^2.8.5",
+    "csv-parse": "^6.1.0",
+    "date-fns": "^2.30.0",
+    "dotenv": "^16.6.1",
+    "formik": "^2.4.6",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
+    "mysql2": "^3.6.0",
+    "notistack": "^3.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.30.1",
+    "react-scripts": "^5.0.1",
+    "react-table": "^7.8.0",
+    "yup": "^1.7.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "jest": "^30.0.5",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.1.4",
+    "vite": "^7.0.6"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

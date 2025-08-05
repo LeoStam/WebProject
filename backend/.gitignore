@@ -1,0 +1,40 @@
+# === General ===
+node_modules/
+**/node_modules/
+.env
+.env.*.local
+.DS_Store
+*.log
+*.sqlite
+*.db
+.vscode/
+.idea/
+
+# === Build and output ===
+dist/
+build/
+**/build/
+**/dist/
+**/.next/
+**/.cache/
+**/out/
+
+# === Logs ===
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === Coverage ===
+coverage/
+**/coverage/
+
+# === System files ===
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# === Misc ===
+uploads/
+tmp/
+*.bak
+*.old
