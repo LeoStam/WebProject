@@ -22,13 +22,13 @@ This project is a **Car Garage Management System** with a Node.js/Express backen
 
 ## Project Structure
 
+### Project Structure
+
 ```
 docker-compose.yml
 package.json
 README.md
 backend/
-  .env
-  .gitignore
   Dockerfile
   package.json
   src/
@@ -36,30 +36,69 @@ backend/
     config/
       db.config.js
     controllers/
+      appointment.controller.js
+      auth.controller.js
+      car.controller.js
       user.controller.js
     middleware/
       auth.js
     models/
+      appointment.model.js
+      car.model.js
       customer.model.js
+      mechanic.model.js
+      secretary.model.js
+      task.model.js
       user.model.js
     routes/
+      appointment.routes.js
       auth.routes.js
+      car.routes.js
       user.routes.js
-    utils/
 database/
   data.sql
   init.sql
+  migrations/
+    add_admin_role.sql
 frontend/
   Dockerfile
-  public/
-    images/
-    index.html
-    css/
-      style.css
-    js/
-      api.js
-      main.js
-```
+  package.json
+  vite.config.js
+  src/
+    App.js
+    index.js
+    theme.js
+    components/
+      ProtectedRoute.js
+    context/
+      AuthContext.js
+    layouts/
+      MainLayout.js
+    pages/
+      Dashboard.js
+      Landing.js
+      Login.js
+      Register.js
+      RequestPasswordReset.js
+      ResetPassword.js
+      Appointments/
+        AppointmentDialog.js
+        AppointmentsList.js
+      Cars/
+        CarDialog.js
+        CarsList.js
+      Profile/
+        ChangePasswordDialog.js
+        Profile.js
+      Users/
+        UserDialog.js
+        UsersList.js
+    services/
+      api.service.js
+    utils/
+      validationSchemas.js
+nginx/
+  nginx.conf
 
 ---
 
@@ -89,8 +128,12 @@ Configured in `backend/.env`:
 
 ### Models
 
-- **User:** username, email, password, role (`customer`, `mechanic`, `secretary`), is_active, created_at
-- **Customer:** afm, address, user_id (FK to User)
+- **User:** username, email, password, fullName, idCardNumber, role, isActive, created_at
+- **Customer:** vatNumber, address, user (Reference)
+- **Mechanic:** specialty, user (Reference)
+- **Car:** serialNumber, model, make, carType, fuelType, numberOfDoors, numberOfWheels, productionDate, acquisitionYear, owner (Reference)
+- **Appointment:** date, time, reason, problemDescription, status, car (Reference), customer (Reference), mechanic (Reference), tasks (Reference[]), cost
+- **Task:** description, materials, completionTime, cost, completed
 
 ### API Endpoints
 
@@ -129,25 +172,56 @@ Configured in `backend/.env`:
 
 ### Technologies
 
-- Static HTML/CSS/JS (served by Nginx)
-- No framework (React/Vue/Angular) used
+- React with Material-UI
+- Context API for state management
+- JWT for authentication
+- Axios for API requests
+- Formik for form handling
+- Vite for build tooling
 
-### Structure
+### Features
 
-- `index.html`: Main page, includes login/register buttons, loads JS.
-- `api.js`:  
-  - `apiService` object for making API requests (register, getAllUsers).
-  - No login implemented.
-- `main.js`:  
-  - Not provided, assumed to handle UI logic.
+- Responsive and modern UI design
+- Role-based access control
+- Protected routes
+- Form validation
+- User session management
+- Profile management
+- Car management
+- Appointment scheduling
+- Task management
 
-### Not Implemented
+### Components
 
-- Login form and logic
-- Registration form and logic
-- User session management (JWT storage)
-- Role-based UI
-- Customer/mechanic profile management
+- **Authentication:**
+  - Login/Register forms
+  - Password reset functionality
+  - Protected route wrapper
+
+- **Layout:**
+  - Responsive navigation
+  - Role-based menu items
+  - User profile section
+
+- **Dashboard:**
+  - Overview statistics
+  - Quick action buttons
+  - Recent activities
+
+- **User Management:**
+  - User listing with filters
+  - User creation/editing
+  - Role management
+
+- **Car Management:**
+  - Car registration
+  - Service history
+  - Owner information
+
+- **Appointment System:**
+  - Appointment scheduling
+  - Status tracking
+  - Task assignment
 
 ---
 
@@ -168,23 +242,29 @@ Configured in `backend/.env`:
 
 ### What Works
 
-- User registration (customer/mechanic) via API
-- User listing and activation (secretary only, via API)
-- JWT-based authentication middleware (but no login endpoint)
-- Database schema and models for users/customers
-- Dockerized setup for DB, backend, frontend
+- Complete user authentication system (login, register, password reset)
+- User management with role-based access control
+- Car management system (CRUD operations)
+- Appointment scheduling and management
+- Profile management with password change functionality
+- Frontend implementation with Material-UI
+- JWT handling and secure authentication
+- Customer/mechanic profile management
+- Secretary administrative functions
+- Docker containerization with proper configurations
 
 ### What Is Missing / Next Steps
 
-- **Login endpoint** (`/api/auth/login`)
-- **Frontend forms** for registration and login
-- **JWT handling** on frontend (store, send with requests)
-- **Customer/mechanic profile creation** on registration
-- **Mechanic model/controller logic**
-- **User management UI** (activation, listing)
-- **Error handling and validation** improvements
-- **Unit/integration tests**
-- **Production configuration** (env, security, etc.)
+- **Email notifications** for appointments and updates
+- **Report generation** system for service history
+- **Analytics dashboard** for garage statistics
+- **Unit/integration tests** implementation
+- **Mobile responsiveness** improvements
+- **Documentation** updates and API documentation completion
+- **Appointment reminders** system
+- **Service history tracking** enhancements
+- **Automated mechanic assignment** system
+- **Production deployment** optimizations
 
 ---
 

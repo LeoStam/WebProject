@@ -15,11 +15,11 @@ RUN npm install --include=dev
 COPY . .
 
 # 5. Environment variables
-ENV NODE_ENV=production
+ENV NODE_ENV=development
 ENV PORT=3000
 
 # Expose application port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"]
+# Run the application
+CMD ["npm", "run"]
