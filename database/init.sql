@@ -7,9 +7,12 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role ENUM('customer', 'mechanic', 'secretary') NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    id_number VARCHAR(20) NOT NULL UNIQUE,
+    role ENUM('customer', 'mechanic', 'secretary', 'admin') NOT NULL,
     is_active BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Customers Table
@@ -17,6 +20,8 @@ CREATE TABLE customers (
     user_id INT PRIMARY KEY,
     afm VARCHAR(9) NOT NULL UNIQUE,
     address TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -24,6 +29,8 @@ CREATE TABLE customers (
 CREATE TABLE mechanics (
     user_id INT PRIMARY KEY,
     specialty VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -44,7 +51,7 @@ CREATE TABLE IF NOT EXISTS cars (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT chk_year CHECK (production_year BETWEEN 1900 AND YEAR(CURRENT_DATE) + 1),
+  CONSTRAINT chk_year CHECK (production_year BETWEEN 1900 AND 2030),
   CONSTRAINT chk_doors CHECK (doors_count BETWEEN 1 AND 10),
   CONSTRAINT chk_wheels CHECK (wheels_count BETWEEN 2 AND 12)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -69,7 +76,7 @@ CREATE TABLE IF NOT EXISTS appointments (
   FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (mechanic_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (car_vin) REFERENCES cars(vin) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tasks Table
 CREATE TABLE IF NOT EXISTS tasks (
@@ -81,3 +88,29 @@ CREATE TABLE IF NOT EXISTS tasks (
   appointment_id INT NOT NULL,
   FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE
 );
+
+-- Create admin user directly
+INSERT INTO users (
+    username,
+    email,
+    password,
+    full_name,
+    id_number,
+    role,
+    is_active,
+    created_at,
+    updated_at
+) VALUES (
+    'admin',
+    'admin@garage.com',
+    '$2a$10$zu5xKCuUbzCWgSQix0.ekeg904A6EKNpZw4htUXxtsLfs4Q554jyi',  -- Password: admin123
+    'System Administrator',
+    'ADMIN001',
+    'admin',
+    true,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+);
+
+-- Debug: Check if admin was created
+SELECT * FROM users WHERE role = 'admin';

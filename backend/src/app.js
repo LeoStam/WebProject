@@ -9,8 +9,15 @@ const db = require('./config/db.config');
 const app = express();
 const jwt = require('jsonwebtoken');
 
-// Middleware
-app.use(cors());
+// CORS Configuration
+app.use(cors({
+  origin: ['http://localhost:8080', 'http://localhost:5173'], // Allow both nginx (8080) and vite dev server (5173)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+// Body Parser Middleware
 app.use(express.json());
 app.set('jwtSecret', process.env.JWT_SECRET);
 
@@ -20,12 +27,14 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const carRoutes = require('./routes/car.routes');
 const appointmentRoutes = require('./routes/appointment.routes');
+const statsRoutes = require('./routes/stats.routes');
 
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/cars', carRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/stats', statsRoutes);
 //-------------------------
 
 // Test database connection

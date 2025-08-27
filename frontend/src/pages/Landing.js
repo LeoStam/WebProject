@@ -1,44 +1,43 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Container, Typography, Box, Paper } from '@mui/material';
+import { Button, Container, Typography, Box, Paper, styled } from '@mui/material';
 
-import makeStyles from '@mui/styles/makeStyles';
+const HeroSection = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(8, 0, 6),
+  backgroundColor: theme.palette.background.paper,
+}));
 
-const useStyles = makeStyles((theme) => ({
-  hero: {
-    padding: theme.spacing(8, 0, 6),
-    backgroundColor: theme.palette.background.paper,
-  },
-  buttons: {
-    marginTop: theme.spacing(4),
-    display: 'flex',
-    justifyContent: 'center',
-    gap: theme.spacing(2)
-  },
-  button: {
-    padding: theme.spacing(1, 4),
-  },
-  paper: {
-    padding: theme.spacing(4),
-    textAlign: 'center',
-    color: theme.palette.text.secondary,
-    marginTop: theme.spacing(4),
-  },
-  services: {
-    marginTop: theme.spacing(2),
-    '& > *': {
-      marginBottom: theme.spacing(1),
-    }
+const ButtonContainer = styled('div')(({ theme }) => ({
+  marginTop: theme.spacing(4),
+  display: 'flex',
+  justifyContent: 'center',
+  gap: theme.spacing(2)
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+  padding: theme.spacing(1, 4),
+}));
+
+const ServicesPaper = styled(Paper)(({ theme }) => ({
+  padding: theme.spacing(4),
+  textAlign: 'center',
+  color: theme.palette.text.secondary,
+  marginTop: theme.spacing(4),
+}));
+
+const ServicesContainer = styled('div')(({ theme }) => ({
+  marginTop: theme.spacing(2),
+  '& > *': {
+    marginBottom: theme.spacing(1),
   }
 }));
 
 const Landing = () => {
-  const classes = useStyles();
   const navigate = useNavigate();
 
   return (
     <Container maxWidth="md">
-      <Box className={classes.hero}>
+      <HeroSection>
         <Typography 
           component="h1" 
           variant="h2" 
@@ -56,31 +55,29 @@ const Landing = () => {
         >
           Professional Vehicle Maintenance & Repair Services
         </Typography>
-        <div className={classes.buttons}>
-          <Button
+        <ButtonContainer>
+          <StyledButton
             variant="contained"
             color="primary"
-            className={classes.button}
             onClick={() => navigate('/login')}
           >
             Login
-          </Button>
-          <Button
+          </StyledButton>
+          <StyledButton
             variant="outlined"
             color="primary"
-            className={classes.button}
             onClick={() => navigate('/register')}
           >
             Register
-          </Button>
-        </div>
-      </Box>
+          </StyledButton>
+        </ButtonContainer>
+      </HeroSection>
       
-      <Paper className={classes.paper}>
+      <ServicesPaper>
         <Typography variant="h6" gutterBottom>
           Our Services
         </Typography>
-        <div className={classes.services}>
+        <ServicesContainer>
           <Typography variant="body1">
             • Professional Vehicle Maintenance
           </Typography>
@@ -93,8 +90,8 @@ const Landing = () => {
           <Typography variant="body1">
             • Real-time Service Tracking
           </Typography>
-        </div>
-      </Paper>
+        </ServicesContainer>
+      </ServicesPaper>
     </Container>
   );
 };

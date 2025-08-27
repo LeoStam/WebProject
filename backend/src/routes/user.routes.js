@@ -5,6 +5,9 @@ const auth = require('../middleware/auth');
 
 router.use(auth()); // Require authentication for all user routes
 
+// Get current user profile
+router.get('/me', auth(), userController.getCurrentUser);
+
 // GET all users (Secretary only)
 router.get('/', auth(['secretary']), userController.getAllUsers);
 

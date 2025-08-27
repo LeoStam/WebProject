@@ -1,13 +1,12 @@
 const { DataTypes } = require('sequelize');
 const db = require('../config/db.config');
-const User = require('./user.model');
 
 const Mechanic = db.define('Mechanic', {
   user_id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     references: {
-      model: User,
+      model: 'Users',  // This is the table name
       key: 'id'
     }
   },
@@ -16,11 +15,11 @@ const Mechanic = db.define('Mechanic', {
     allowNull: false
   }
 }, {
+  tableName: 'mechanics',
   timestamps: true,
+  underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at'
 });
-
-Mechanic.belongsTo(User, { foreignKey: 'user_id' });
 
 module.exports = Mechanic;

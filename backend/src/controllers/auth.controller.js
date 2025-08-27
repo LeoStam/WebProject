@@ -1,9 +1,7 @@
-const User = require('../models/user.model');
-const Customer = require('../models/customer.model');
-const Mechanic = require('../models/mechanic.model');
-const Secretary = require('../models/secretary.model');
+const { User, Customer, Mechanic, Secretary } = require('../models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const db = require('../config/db.config');
 
 exports.register = async (req, res) => {
   const transaction = await sequelize.transaction();
@@ -77,36 +75,67 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    console.log('Login attempt with:', { email });
     // Find user with role-specific data
     const user = await User.findOne({
       where: { email },
+      attributes: ['id', 'username', 'email', 'password', 'full_name', 'id_number', 'role', 'is_active'],
       include: [
-        { model: Customer, required: false },
-        { model: Mechanic, required: false }
+        { 
+          model: Customer, 
+          as: 'customerProfile', 
+          required: false,
+          attributes: ['afm', 'address']
+        },
+        { 
+          model: Mechanic, 
+          as: 'mechanicProfile', 
+          required: false,
+          attributes: ['specialty']
+        }
       ]
     });
 
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.log('User not found with email:', email);
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
     }
 
-    if (!user.is_active) {
-      return res.status(401).json({ message: 'Account not activated' });
+    if (!user.is_active && user.role !== 'admin') {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Account not activated' 
+      });
     }
 
+    console.log('Attempting login with:', {
+      inputPassword: password,
+      storedHash: user.password
+    });
+    
     const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log('Password comparison result:', isValidPassword);
+    
     if (!isValidPassword) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
     }
 
     const token = jwt.sign(
       { 
-        id: user.id, 
-        role: user.role,
-        full_name: user.full_name 
+        user: {
+          id: user.id, 
+          role: user.role,
+          full_name: user.full_name 
+        }
       },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn: '24h' }
     );
 
     res.json({
@@ -118,7 +147,8 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         full_name: user.full_name,
-        profile: user.role === 'customer' ? user.Customer : user.Mechanic
+        profile: user.role === 'customer' ? user.customerProfile : 
+                user.role === 'mechanic' ? user.mechanicProfile : null
       }
     });
   } catch (error) {
@@ -233,6 +263,35 @@ exports.createSecretary = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message
+    });
+  }
+};
+
+// Check admin existence and details
+exports.checkAdmin = async (req, res) => {
+  try {
+    const admin = await User.findOne({
+      where: { role: 'admin' },
+      attributes: ['id', 'username', 'email', 'role', 'is_active', 'created_at']
+    });
+
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'No admin user found in the system'
+      });
+    }
+
+    res.json({
+      success: true,
+      admin: admin
+    });
+  } catch (error) {
+    console.error('Error checking admin:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking admin status',
+      error: error.message
     });
   }
 };

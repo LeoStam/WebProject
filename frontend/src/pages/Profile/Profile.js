@@ -9,34 +9,36 @@ import {
   Card,
   CardContent,
   Divider,
-  makeStyles
-} from '@material-ui/core';
+  styled
+} from '@mui/material';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '../../context/AuthContext';
 import ChangePasswordDialog from './ChangePasswordDialog';
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    maxWidth: 800,
-    margin: '0 auto',
-    padding: theme.spacing(3)
-  },
-  header: {
-    marginBottom: theme.spacing(4)
-  },
-  card: {
-    marginBottom: theme.spacing(3)
-  },
-  divider: {
-    margin: theme.spacing(3, 0)
-  },
-  buttonContainer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginTop: theme.spacing(3)
-  }
+const Root = styled(Paper)(({ theme }) => ({
+  maxWidth: 800,
+  margin: '0 auto',
+  padding: theme.spacing(3)
+}));
+
+const Header = styled('div')(({ theme }) => ({
+  marginBottom: theme.spacing(4)
+}));
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  marginBottom: theme.spacing(3)
+}));
+
+const StyledDivider = styled(Divider)(({ theme }) => ({
+  margin: theme.spacing(3, 0)
+}));
+
+const ButtonContainer = styled('div')(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  marginTop: theme.spacing(3)
 }));
 
 const profileSchema = Yup.object().shape({
@@ -66,7 +68,6 @@ const profileSchema = Yup.object().shape({
 });
 
 const Profile = () => {
-  const classes = useStyles();
   const { user, updateUser } = useAuth();
   const { enqueueSnackbar } = useSnackbar();
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
@@ -91,17 +92,17 @@ const Profile = () => {
   };
 
   return (
-    <Paper className={classes.root}>
-      <div className={classes.header}>
+    <Root>
+      <Header>
         <Typography variant="h4" gutterBottom>
           Profile Settings
         </Typography>
         <Typography color="textSecondary">
           Manage your account settings and profile information
         </Typography>
-      </div>
+      </Header>
 
-      <Card className={classes.card}>
+      <StyledCard>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             Account Information
@@ -135,9 +136,9 @@ const Profile = () => {
             Change Password
           </Button>
         </CardContent>
-      </Card>
+      </StyledCard>
 
-      <Card>
+      <StyledCard>
         <CardContent>
           <Typography variant="h6" gutterBottom>
             Profile Information
@@ -222,7 +223,7 @@ const Profile = () => {
                   )}
 
                   <Grid item xs={12}>
-                    <div className={classes.buttonContainer}>
+                    <ButtonContainer>
                       <Button
                         type="submit"
                         variant="contained"
@@ -231,20 +232,20 @@ const Profile = () => {
                       >
                         Save Changes
                       </Button>
-                    </div>
+                    </ButtonContainer>
                   </Grid>
                 </Grid>
               </Form>
             )}
           </Formik>
         </CardContent>
-      </Card>
+      </StyledCard>
 
       <ChangePasswordDialog
         open={passwordDialogOpen}
         onClose={() => setPasswordDialogOpen(false)}
       />
-    </Paper>
+    </Root>
   );
 };
 

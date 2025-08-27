@@ -3,6 +3,29 @@ const Customer = require('../models/customer.model');
 const Mechanic = require('../models/mechanic.model');
 const { Op } = require('sequelize');
 
+exports.getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id, {
+      include: [
+        { model: Customer, required: false },
+        { model: Mechanic, required: false }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.findAll({

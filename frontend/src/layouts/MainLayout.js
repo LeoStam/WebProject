@@ -10,66 +10,65 @@ import {
   ListItemText,
   IconButton,
   Typography,
-  makeStyles
-} from '@material-ui/core';
-import {
-  Menu as MenuIcon,
-  Dashboard,
-  DirectionsCar,
-  Event,
-  Person,
-  ExitToApp
-} from '@material-ui/icons';
+  styled
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import EventIcon from '@mui/icons-material/Event';
+import PersonIcon from '@mui/icons-material/Person';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const drawerWidth = 240;
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    display: 'flex',
-  },
-  appBar: {
-    zIndex: theme.zIndex.drawer + 1,
-  },
-  drawer: {
-    width: drawerWidth,
-    flexShrink: 0,
-  },
-  drawerPaper: {
-    width: drawerWidth,
-  },
-  content: {
-    flexGrow: 1,
-    padding: theme.spacing(3),
-    marginTop: 64,
-  },
-  title: {
-    flexGrow: 1,
-  },
+const Root = styled('div')({
+  display: 'flex',
+});
+
+const StyledAppBar = styled(AppBar)(({ theme }) => ({
+  zIndex: theme.zIndex.drawer + 1,
 }));
 
+const StyledDrawer = styled(Drawer)({
+  width: drawerWidth,
+  flexShrink: 0,
+  '& .MuiDrawer-paper': {
+    width: drawerWidth,
+  },
+});
+
+const MainContent = styled('main')(({ theme }) => ({
+  flexGrow: 1,
+  padding: theme.spacing(3),
+  marginTop: 64,
+}));
+
+const Title = styled(Typography)({
+  flexGrow: 1,
+});
+
 const MainLayout = ({ children }) => {
-  const classes = useStyles();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const menuItems = [
-    { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
-    { text: 'Cars', icon: <DirectionsCar />, path: '/cars' },
-    { text: 'Appointments', icon: <Event />, path: '/appointments' },
-    { text: 'Profile', icon: <Person />, path: '/profile' },
+    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+    { text: 'Cars', icon: <DirectionsCarIcon />, path: '/cars' },
+    { text: 'Appointments', icon: <EventIcon />, path: '/appointments' },
+    { text: 'Profile', icon: <PersonIcon />, path: '/profile' },
   ];
 
   if (user?.role === 'secretary') {
     menuItems.push(
-      { text: 'Users', icon: <Person />, path: '/users' }
+      { text: 'Users', icon: <PersonIcon />, path: '/users' }
     );
   }
 
   return (
-    <div className={classes.root}>
-      <AppBar position="fixed" className={classes.appBar}>
+    <Root>
+      <StyledAppBar position="fixed">
         <Toolbar>
           <IconButton
             edge="start"
@@ -78,22 +77,16 @@ const MainLayout = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" className={classes.title}>
+          <Title variant="h6">
             Garage Management
-          </Typography>
+          </Title>
           <IconButton color="inherit" onClick={logout}>
-            <ExitToApp />
+            <ExitToAppIcon />
           </IconButton>
         </Toolbar>
-      </AppBar>
+      </StyledAppBar>
 
-      <Drawer
-        className={classes.drawer}
-        variant="permanent"
-        classes={{
-          paper: classes.drawerPaper,
-        }}
-      >
+      <StyledDrawer variant="permanent">
         <Toolbar />
         <List>
           {menuItems.map((item) => (
@@ -107,12 +100,12 @@ const MainLayout = ({ children }) => {
             </ListItem>
           ))}
         </List>
-      </Drawer>
+      </StyledDrawer>
 
-      <main className={classes.content}>
+      <MainContent>
         {children}
-      </main>
-    </div>
+      </MainContent>
+    </Root>
   );
 };
 

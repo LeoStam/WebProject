@@ -12,48 +12,43 @@ import {
   IconButton,
   Typography,
   Chip,
-  makeStyles
-} from '@material-ui/core';
-import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Cancel as CancelIcon
-} from '@material-ui/icons';
+  styled
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import CancelIcon from '@mui/icons-material/Cancel';
 import { useSnackbar } from 'notistack';
 import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api.service';
 import AppointmentDialog from './AppointmentDialog';
 
-const useStyles = makeStyles((theme) => ({
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing(3)
-  },
-  table: {
-    minWidth: 650,
-  },
-  statusChip: {
-    margin: theme.spacing(0.5),
-  },
-  created: {
-    backgroundColor: theme.palette.info.light,
-  },
-  inProgress: {
-    backgroundColor: theme.palette.warning.light,
-  },
-  completed: {
-    backgroundColor: theme.palette.success.light,
-  },
-  cancelled: {
-    backgroundColor: theme.palette.error.light,
-  }
+const Header = styled('div')(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: theme.spacing(3)
 }));
 
+const StyledTable = styled(Table)({
+  minWidth: 650,
+});
+
+const StatusChip = styled(Chip)(({ theme, status }) => {
+  const colors = {
+    created: theme.palette.info.light,
+    in_progress: theme.palette.warning.light,
+    completed: theme.palette.success.light,
+    cancelled: theme.palette.error.light
+  };
+  
+  return {
+    margin: theme.spacing(0.5),
+    backgroundColor: colors[status]
+  };
+});
+
 const AppointmentsList = () => {
-  const classes = useStyles();
   const { enqueueSnackbar } = useSnackbar();
   const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
@@ -97,18 +92,16 @@ const AppointmentsList = () => {
 
   const getStatusChip = (status) => {
     const statusMap = {
-      created: { label: 'Created', className: classes.created },
-      in_progress: { label: 'In Progress', className: classes.inProgress },
-      completed: { label: 'Completed', className: classes.completed },
-      cancelled: { label: 'Cancelled', className: classes.cancelled }
+      created: 'Created',
+      in_progress: 'In Progress',
+      completed: 'Completed',
+      cancelled: 'Cancelled'
     };
 
-    const statusInfo = statusMap[status] || statusMap.created;
-
     return (
-      <Chip
-        label={statusInfo.label}
-        className={`${classes.statusChip} ${statusInfo.className}`}
+      <StatusChip
+        label={statusMap[status] || statusMap.created}
+        status={status}
       />
     );
   };
@@ -127,7 +120,7 @@ const AppointmentsList = () => {
 
   return (
     <>
-      <div className={classes.header}>
+      <Header>
         <Typography variant="h5">Appointments</Typography>
         <Button
           variant="contained"
@@ -137,10 +130,10 @@ const AppointmentsList = () => {
         >
           New Appointment
         </Button>
-      </div>
+      </Header>
 
       <TableContainer component={Paper}>
-        <Table className={classes.table}>
+        <StyledTable>
           <TableHead>
             <TableRow>
               <TableCell>Date</TableCell>
@@ -182,7 +175,7 @@ const AppointmentsList = () => {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+        </StyledTable>
       </TableContainer>
 
       <AppointmentDialog

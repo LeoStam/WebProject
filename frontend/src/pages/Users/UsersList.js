@@ -1,55 +1,48 @@
 // src/pages/Users/UsersList.js
 import React, { useState, useEffect } from 'react';
-import {
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Typography,
-  Chip,
-  makeStyles,
-  TextField,
-  InputAdornment
-} from '@material-ui/core';
-import {
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  CheckCircle as ActiveIcon,
-  Cancel as InactiveIcon,
-  Search as SearchIcon
-} from '@material-ui/icons';
+import Paper from '@mui/material/Paper';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import { styled } from '@mui/material/styles';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import SearchIcon from '@mui/icons-material/Search';
 import { useSnackbar } from 'notistack';
 import api from '../../services/api.service';
 import UserDialog from './UserDialog';
 
-const useStyles = makeStyles((theme) => ({
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing(3)
-  },
-  search: {
-    marginBottom: theme.spacing(3),
-    width: 300
-  },
-  table: {
-    minWidth: 650,
-  },
-  active: {
-    backgroundColor: theme.palette.success.light,
-  },
-  inactive: {
-    backgroundColor: theme.palette.error.light,
-  }
+const Header = styled('div')(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: theme.spacing(3)
+}));
+
+const Search = styled(TextField)(({ theme }) => ({
+  marginBottom: theme.spacing(3),
+  width: 300
+}));
+
+const TableStyles = styled(Table)(({ theme }) => ({
+  minWidth: 650
+}));
+
+const StatusChip = styled(Chip)(({ theme, status }) => ({
+  backgroundColor: status === 'active' ? theme.palette.success.light : theme.palette.error.light
 }));
 
 const UsersList = () => {
-  const classes = useStyles();
   const { enqueueSnackbar } = useSnackbar();
   const [users, setUsers] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -109,12 +102,11 @@ const UsersList = () => {
 
   return (
     <>
-      <div className={classes.header}>
+      <Header>
         <Typography variant="h5">Users Management</Typography>
-      </div>
+      </Header>
 
-      <TextField
-        className={classes.search}
+      <Search
         variant="outlined"
         placeholder="Search users..."
         value={searchTerm}
@@ -129,7 +121,7 @@ const UsersList = () => {
       />
 
       <TableContainer component={Paper}>
-        <Table className={classes.table}>
+        <TableStyles>
           <TableHead>
             <TableRow>
               <TableCell>Username</TableCell>
@@ -153,10 +145,10 @@ const UsersList = () => {
                   />
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    icon={user.is_active ? <ActiveIcon /> : <InactiveIcon />}
+                  <StatusChip
+                    icon={user.is_active ? <CheckCircleIcon /> : <CancelIcon />}
                     label={user.is_active ? 'Active' : 'Inactive'}
-                    className={user.is_active ? classes.active : classes.inactive}
+                    status={user.is_active ? 'active' : 'inactive'}
                   />
                 </TableCell>
                 <TableCell>
@@ -164,7 +156,7 @@ const UsersList = () => {
                     <EditIcon />
                   </IconButton>
                   <IconButton onClick={() => handleToggleActive(user)}>
-                    {user.is_active ? <InactiveIcon /> : <ActiveIcon />}
+                    {user.is_active ? <CancelIcon /> : <CheckCircleIcon />}
                   </IconButton>
                   <IconButton onClick={() => handleDelete(user)}>
                     <DeleteIcon />
@@ -173,7 +165,7 @@ const UsersList = () => {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+        </TableStyles>
       </TableContainer>
 
       <UserDialog

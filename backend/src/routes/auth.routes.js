@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 // Public routes
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+router.get('/check-admin', authController.checkAdmin);
 
 // Protected routes
 router.post('/create-secretary', auth(['admin']), authController.createSecretary);

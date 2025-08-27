@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from '@material-ui/core/styles';
+
 import { SnackbarProvider } from 'notistack';
 import { AuthProvider } from './context/AuthContext';
 import theme from './theme';
@@ -20,12 +20,11 @@ import Profile from './pages/Profile/Profile';
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <SnackbarProvider maxSnack={3}>
-        <AuthProvider>
-          <Router>
-            <Box bgcolor="background.default" minHeight="100vh">
-              <Routes>
+    <SnackbarProvider maxSnack={3}>
+      <AuthProvider>
+        <Router>
+          <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+            <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
@@ -87,7 +86,6 @@ function App() {
           </Router>
         </AuthProvider>
       </SnackbarProvider>
-    </ThemeProvider>
   );
 }
 

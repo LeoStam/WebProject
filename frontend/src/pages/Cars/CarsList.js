@@ -11,27 +11,27 @@ import {
   Button,
   IconButton,
   Typography,
-  makeStyles
-} from '@material-ui/core';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@material-ui/icons';
+  styled
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useSnackbar } from 'notistack';
 import api from '../../services/api.service';
 import CarDialog from './CarDialog';
 
-const useStyles = makeStyles((theme) => ({
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing(3)
-  },
-  table: {
-    minWidth: 650,
-  }
+const Header = styled('div')(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: theme.spacing(3)
 }));
 
+const StyledTable = styled(Table)({
+  minWidth: 650,
+});
+
 const CarsList = () => {
-  const classes = useStyles();
   const { enqueueSnackbar } = useSnackbar();
   const [cars, setCars] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -81,7 +81,7 @@ const CarsList = () => {
 
   return (
     <>
-      <div className={classes.header}>
+      <Header>
         <Typography variant="h5">Cars</Typography>
         <Button
           variant="contained"
@@ -91,10 +91,10 @@ const CarsList = () => {
         >
           Add Car
         </Button>
-      </div>
+      </Header>
 
       <TableContainer component={Paper}>
-        <Table className={classes.table}>
+        <StyledTable>
           <TableHead>
             <TableRow>
               <TableCell>VIN</TableCell>
@@ -124,7 +124,7 @@ const CarsList = () => {
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+        </StyledTable>
       </TableContainer>
 
       <CarDialog
