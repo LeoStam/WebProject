@@ -40,6 +40,28 @@ const Register = () => {
 
   const handleSubmit = async (values, { setSubmitting }) => {
     try {
+      // Custom validation for role-specific fields
+      if (values.role === 'customer') {
+        if (!values.afm || !/^[0-9]{9}$/.test(values.afm)) {
+          setError('AFM is required and must be exactly 9 digits for customers');
+          setSubmitting(false);
+          return;
+        }
+        if (!values.address || values.address.length < 5) {
+          setError('Address is required and must be at least 5 characters for customers');
+          setSubmitting(false);
+          return;
+        }
+      }
+      
+      if (values.role === 'mechanic') {
+        if (!values.specialty || values.specialty.length < 3) {
+          setError('Specialty is required and must be at least 3 characters for mechanics');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const { confirmPassword, ...submitData } = values;
       await authService.register(submitData);
       setSuccess('Registration successful! Please wait for account activation.');

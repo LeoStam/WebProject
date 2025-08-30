@@ -25,14 +25,27 @@ module.exports = (roles = []) => {
         return res.status(401).json({ message: 'User not found or inactive' });
       }
 
+      // Attach user to request FIRST
+      req.user = user;
+
       // Check role permissions
-      if (roles.length > 0 && !roles.includes(user.role)) {
-        console.log('Role check failed. User role:', user.role, 'Required roles:', roles);
-        return res.status(403).json({ message: 'Insufficient permissions' });
+      if (roles.length > 0) {
+        // Secretary has full admin privileges
+        if (user.role === 'secretary') {
+          // Secretary can do everything
+          next();
+          return;
+        }
+
+        // For other users, check if their role is in the allowed roles
+        const hasPermission = roles.includes(user.role);
+        
+        if (!hasPermission) {
+          console.log('Role check failed. User role:', user.role, 'Required roles:', roles);
+          return res.status(403).json({ message: 'Insufficient permissions' });
+        }
       }
 
-      // Attach user to request
-      req.user = user;
       next();
     } catch (error) {
       console.error('Authentication error:', error);

@@ -43,9 +43,4 @@ const Appointment = db.define('Appointment', {
   updatedAt: 'updated_at'
 });
 
-// Συσχετίσεις
-Appointment.belongsTo(User, { foreignKey: 'customer_id', as: 'customer' });
-Appointment.belongsTo(User, { foreignKey: 'mechanic_id', as: 'mechanic' });
-Appointment.belongsTo(Car, { foreignKey: 'car_vin' });
-
 module.exports = Appointment;

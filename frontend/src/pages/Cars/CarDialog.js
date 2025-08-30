@@ -1,5 +1,5 @@
 // src/pages/Cars/CarDialog.js
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -12,9 +12,10 @@ import {
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import { useSnackbar } from 'notistack';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api.service';
 
-const carSchema = Yup.object().shape({
+const createCarSchema = (isSecretary) => Yup.object().shape({
   vin: Yup.string()
     .length(17, 'VIN must be exactly 17 characters')
     .required('VIN is required'),
@@ -35,11 +36,41 @@ const carSchema = Yup.object().shape({
   doors_count: Yup.number()
     .min(0, 'Cannot have negative doors')
     .max(10, 'Too many doors')
-    .required('Door count is required')
+    .required('Door count is required'),
+  ...(isSecretary && {
+    owner_id: Yup.string()
+      .required('Customer is required')
+  })
 });
 
 const CarDialog = ({ open, onClose, car }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const { user } = useAuth();
+  const [customers, setCustomers] = useState([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+
+  const isSecretary = user?.role === 'secretary';
+
+  useEffect(() => {
+    if (open && isSecretary && !car) {
+      fetchCustomers();
+    }
+  }, [open, isSecretary, car]);
+
+  const fetchCustomers = async () => {
+    setLoadingCustomers(true);
+    try {
+      const response = await api.get('/users');
+      const activeCustomers = response.data.data.filter(user => 
+        user.role === 'customer' && user.is_active
+      );
+      setCustomers(activeCustomers);
+    } catch (error) {
+      enqueueSnackbar('Failed to load customers', { variant: 'error' });
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
 
   const initialValues = car ? {
     ...car
@@ -50,7 +81,8 @@ const CarDialog = ({ open, onClose, car }) => {
     production_year: new Date().getFullYear(),
     vehicle_type: 'passenger',
     fuel_type: 'petrol',
-    doors_count: 4
+    doors_count: 4,
+    ...(isSecretary && { owner_id: '' })
   };
 
   const handleSubmit = async (values, { setSubmitting }) => {
@@ -75,12 +107,37 @@ const CarDialog = ({ open, onClose, car }) => {
       <DialogTitle>{car ? 'Edit Car' : 'Add New Car'}</DialogTitle>
       <Formik
         initialValues={initialValues}
-        validationSchema={carSchema}
+        validationSchema={createCarSchema(isSecretary)}
         onSubmit={handleSubmit}
       >
         {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
           <Form>
             <DialogContent>
+              {isSecretary && !car && (
+                <TextField
+                  fullWidth
+                  margin="normal"
+                  select
+                  name="owner_id"
+                  label="Customer"
+                  value={values.owner_id}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={touched.owner_id && Boolean(errors.owner_id)}
+                  helperText={touched.owner_id && errors.owner_id}
+                  disabled={loadingCustomers}
+                >
+                  <MenuItem value="">
+                    {loadingCustomers ? 'Loading customers...' : 'Select a customer'}
+                  </MenuItem>
+                  {customers.map((customer) => (
+                    <MenuItem key={customer.id} value={customer.id}>
+                      {customer.full_name} ({customer.username})
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+              
               <TextField
                 fullWidth
                 margin="normal"

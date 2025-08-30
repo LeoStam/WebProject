@@ -52,15 +52,20 @@ const AppointmentsList = () => {
   const { enqueueSnackbar } = useSnackbar();
   const { user } = useAuth();
   const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
   const fetchAppointments = async () => {
     try {
       const response = await api.get('/appointments');
-      setAppointments(response.data);
+      setAppointments(response.data.data || []);
     } catch (error) {
+      console.error('Error fetching appointments:', error);
       enqueueSnackbar('Failed to fetch appointments', { variant: 'error' });
+      setAppointments([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -118,6 +123,10 @@ const AppointmentsList = () => {
            (user.role === 'secretary' && appointment.status !== 'completed');
   };
 
+  if (loading) {
+    return <Typography>Loading appointments...</Typography>;
+  }
+
   return (
     <>
       <Header>
@@ -147,33 +156,43 @@ const AppointmentsList = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {appointments.map((appointment) => (
-              <TableRow key={appointment.id}>
-                <TableCell>
-                  {format(new Date(appointment.date), 'dd/MM/yyyy')}
-                </TableCell>
-                <TableCell>{appointment.start_time}</TableCell>
-                <TableCell>{appointment.customer.full_name}</TableCell>
-                <TableCell>
-                  {`${appointment.car.brand} ${appointment.car.model}`}
-                </TableCell>
-                <TableCell>{appointment.mechanic.full_name}</TableCell>
-                <TableCell>{appointment.reason}</TableCell>
-                <TableCell>{getStatusChip(appointment.status)}</TableCell>
-                <TableCell>
-                  {canEdit(appointment) && (
-                    <IconButton onClick={() => handleEdit(appointment)}>
-                      <EditIcon />
-                    </IconButton>
-                  )}
-                  {canCancel(appointment) && (
-                    <IconButton onClick={() => handleCancel(appointment)}>
-                      <CancelIcon />
-                    </IconButton>
-                  )}
+            {appointments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center">
+                  <Typography variant="body2" color="text.secondary">
+                    No appointments found
+                  </Typography>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              appointments.map((appointment) => (
+                <TableRow key={appointment.id}>
+                  <TableCell>
+                    {format(new Date(appointment.date), 'dd/MM/yyyy')}
+                  </TableCell>
+                  <TableCell>{appointment.start_time}</TableCell>
+                  <TableCell>{appointment.appointmentCustomer?.full_name || 'N/A'}</TableCell>
+                  <TableCell>
+                    {`${appointment.car?.brand || ''} ${appointment.car?.model || ''}`.trim() || 'N/A'}
+                  </TableCell>
+                  <TableCell>{appointment.appointmentMechanic?.full_name || 'Not assigned'}</TableCell>
+                  <TableCell>{appointment.reason}</TableCell>
+                  <TableCell>{getStatusChip(appointment.status)}</TableCell>
+                  <TableCell>
+                    {canEdit(appointment) && (
+                      <IconButton onClick={() => handleEdit(appointment)}>
+                        <EditIcon />
+                      </IconButton>
+                    )}
+                    {canCancel(appointment) && (
+                      <IconButton onClick={() => handleCancel(appointment)}>
+                        <CancelIcon />
+                      </IconButton>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </StyledTable>
       </TableContainer>

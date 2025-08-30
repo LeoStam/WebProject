@@ -1,7 +1,7 @@
 const { User, Customer, Mechanic, Secretary } = require('../models');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const db = require('../config/db.config');
+const sequelize = require('../config/db.config');
 
 exports.register = async (req, res) => {
   const transaction = await sequelize.transaction();

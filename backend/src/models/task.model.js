@@ -23,11 +23,8 @@ const Task = sequelize.define('Task', {
     allowNull: false
   }
 }, {
-  tableName: 'tasks'
+  tableName: 'tasks',
+  timestamps: false
 });
-
-// Συσχέτιση με ραντεβού
-Task.belongsTo(Appointment, { foreignKey: 'appointment_id' });
-Appointment.hasMany(Task, { foreignKey: 'appointment_id' });
 
 module.exports = Task;

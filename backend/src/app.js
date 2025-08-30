@@ -37,9 +37,13 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/stats', statsRoutes);
 //-------------------------
 
-// Test database connection
+// Test database connection and initialize data
 db.authenticate()
-  .then(() => console.log('Database connected...'))
+  .then(async () => {
+    console.log('Database connected...');
+    const initSecretary = require('./scripts/init-secretary');
+    await initSecretary();
+  })
   .catch(err => console.error('Connection error:', err));
 
 // Basic route

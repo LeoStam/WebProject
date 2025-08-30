@@ -9,7 +9,7 @@ router.post('/login', authController.login);
 router.get('/check-admin', authController.checkAdmin);
 
 // Protected routes
-router.post('/create-secretary', auth(['admin']), authController.createSecretary);
+router.post('/create-secretary', auth(['secretary']), authController.createSecretary);
 router.post('/bulk-register', auth(['secretary']), authController.bulkRegister);
 
 module.exports = router;

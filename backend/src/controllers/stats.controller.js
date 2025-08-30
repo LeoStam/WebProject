@@ -20,6 +20,7 @@ exports.getStats = async (req, res) => {
     const pendingTasks = await Task.count({
       include: [{
         model: Appointment,
+        as: 'appointment',
         where: {
           status: 'created'
         }

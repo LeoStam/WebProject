@@ -9,7 +9,7 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     id_number VARCHAR(20) NOT NULL UNIQUE,
-    role ENUM('customer', 'mechanic', 'secretary', 'admin') NOT NULL,
+    role ENUM('customer', 'mechanic', 'secretary') NOT NULL,
     is_active BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE
 );
 
--- Create admin user directly
+-- Create default secretary user (superuser) - this replaces the admin role
 INSERT INTO users (
     username,
     email,
@@ -101,16 +101,13 @@ INSERT INTO users (
     created_at,
     updated_at
 ) VALUES (
-    'admin',
-    'admin@garage.com',
-    '$2a$10$zu5xKCuUbzCWgSQix0.ekeg904A6EKNpZw4htUXxtsLfs4Q554jyi',  -- Password: admin123
+    'secretary',
+    'secretary@garage.com',
+    '$2a$10$kl/uC.8HeE6aAAW.FqFZWOvCn.YsgpUl10KMa6/UAzUkvrE7G7pn.',  -- Password: Admin123!
     'System Administrator',
-    'ADMIN001',
-    'admin',
+    'SEC001',
+    'secretary',
     true,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 );
-
--- Debug: Check if admin was created
-SELECT * FROM users WHERE role = 'admin';

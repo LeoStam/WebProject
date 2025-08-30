@@ -37,26 +37,5 @@ export const registerSchema = Yup.object().shape({
     .required('ID number is required'),
   role: Yup.string()
     .oneOf(['customer', 'mechanic'], 'Invalid role')
-    .required('Role is required'),
-  afm: Yup.string()
-    .when('role', {
-      is: 'customer',
-      then: Yup.string()
-        .matches(/^[0-9]{9}$/, 'AFM must be exactly 9 digits')
-        .required('AFM is required for customers')
-    }),
-  address: Yup.string()
-    .when('role', {
-      is: 'customer',
-      then: Yup.string()
-        .min(5, 'Address must be at least 5 characters')
-        .required('Address is required for customers')
-    }),
-  specialty: Yup.string()
-    .when('role', {
-      is: 'mechanic',
-      then: Yup.string()
-        .min(3, 'Specialty must be at least 3 characters')
-        .required('Specialty is required for mechanics')
-    })
+    .required('Role is required')
 });
