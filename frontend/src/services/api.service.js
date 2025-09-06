@@ -22,8 +22,17 @@ export const authService = {
   login: credentials => api.post('/auth/login', credentials),
   register: userData => api.post('/auth/register', userData),
   getCurrentUser: () => api.get('/users/me'),
+  updateProfile: userData => api.put('/users/me', userData),
+  changePassword: passwordData => api.post('/auth/change-password', passwordData),
   resetPassword: (token, password) => api.post('/auth/reset-password', { token, password }),
   requestPasswordReset: email => api.post('/auth/request-reset', { email })
+};
+
+export const taskService = {
+  createTask: taskData => api.post('/tasks', taskData),
+  getTasks: appointmentId => api.get(`/tasks/appointment/${appointmentId}`),
+  updateTask: (taskId, taskData) => api.put(`/tasks/${taskId}`, taskData),
+  deleteTask: taskId => api.delete(`/tasks/${taskId}`)
 };
 
 export default api;

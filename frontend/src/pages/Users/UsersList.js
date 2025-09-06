@@ -48,19 +48,44 @@ const UsersList = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (search = '') => {
     try {
-      const response = await api.get('/users');
+      setIsSearching(true);
+      const params = search ? { q: search } : {};
+      const response = await api.get('/users/search', { params });
       setUsers(response.data);
     } catch (error) {
-      enqueueSnackbar('Failed to fetch users', { variant: 'error' });
+      // If search fails, fall back to getting all users
+      try {
+        const response = await api.get('/users');
+        setUsers(response.data);
+        enqueueSnackbar('Search failed, showing all users', { variant: 'warning' });
+      } catch (fallbackError) {
+        enqueueSnackbar('Failed to fetch users', { variant: 'error' });
+      }
+    } finally {
+      setIsSearching(false);
     }
   };
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm.trim()) {
+        fetchUsers(searchTerm.trim());
+      } else {
+        fetchUsers();
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const handleEdit = (user) => {
     setSelectedUser(user);
@@ -94,11 +119,7 @@ const UsersList = () => {
     }
   };
 
-  const filteredUsers = users.filter(user => 
-    user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users; // No client-side filtering needed since we use backend search
 
   return (
     <>
@@ -108,9 +129,10 @@ const UsersList = () => {
 
       <Search
         variant="outlined"
-        placeholder="Search users..."
+        placeholder="Search by name, username, email, or AFM..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
+        disabled={isSearching}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -128,6 +150,7 @@ const UsersList = () => {
               <TableCell>Full Name</TableCell>
               <TableCell>Email</TableCell>
               <TableCell>Role</TableCell>
+              <TableCell>AFM</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
@@ -143,6 +166,9 @@ const UsersList = () => {
                     label={user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     color="primary"
                   />
+                </TableCell>
+                <TableCell>
+                  {user.customerProfile?.afm || '-'}
                 </TableCell>
                 <TableCell>
                   <StatusChip

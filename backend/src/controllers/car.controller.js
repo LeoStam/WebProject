@@ -320,7 +320,7 @@ exports.searchCars = async (req, res) => {
 };
 
 exports.deleteCar = async (req, res) => {
-  const transaction = await sequelize.transaction();
+  const transaction = await db.transaction();
   try {
     const car = await Car.findByPk(req.params.vin);
 

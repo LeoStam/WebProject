@@ -1,6 +1,7 @@
 const User = require('./user.model');
 const Customer = require('./customer.model');
 const Mechanic = require('./mechanic.model');
+const Secretary = require('./secretary.model');
 const Car = require('./car.model');
 const Appointment = require('./appointment.model');
 const Task = require('./task.model');
@@ -77,6 +78,7 @@ module.exports = {
   User,
   Customer,
   Mechanic,
+  Secretary,
   Car,
   Appointment,
   Task

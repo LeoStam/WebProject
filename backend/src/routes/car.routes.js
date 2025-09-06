@@ -15,7 +15,7 @@ router.post('/bulk', auth(['secretary']), carController.bulkCreateCars);
 // Individual car operations
 router.post('/', auth(['secretary', 'customer']), carController.createCar);
 router.get('/:vin', auth(), carController.getCar);
-router.put('/:vin', auth(['secretary']), carController.updateCar);
-router.delete('/:vin', auth(['secretary']), carController.deleteCar);
+router.put('/:vin', auth(['secretary', 'customer']), carController.updateCar);
+router.delete('/:vin', auth(['secretary', 'customer']), carController.deleteCar);
 
 module.exports = router;

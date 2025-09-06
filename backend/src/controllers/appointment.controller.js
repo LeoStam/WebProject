@@ -134,15 +134,19 @@ exports.createAppointment = async (req, res) => {
     }
 
     // Find available mechanics
-    const availableMechanics = await User.findAll({
+    const allMechanics = await User.findAll({
       where: { 
         role: 'mechanic',
         is_active: true
-      },
-      include: [{
-        model: Appointment,
-        as: 'mechanicAppointments',
+      }
+    });
+
+    // Check each mechanic for availability
+    const availableMechanics = [];
+    for (const mechanic of allMechanics) {
+      const conflictingAppointments = await Appointment.count({
         where: {
+          mechanic_id: mechanic.id,
           date,
           start_time: {
             [Op.between]: [
@@ -155,12 +159,13 @@ exports.createAppointment = async (req, res) => {
           status: {
             [Op.notIn]: ['cancelled', 'completed']
           }
-        },
-        required: false
-      }],
-      having: db.literal('COUNT(`mechanicAppointments`.`id`) = 0'),
-      group: ['User.id']
-    });
+        }
+      });
+
+      if (conflictingAppointments === 0) {
+        availableMechanics.push(mechanic);
+      }
+    }
 
     if (availableMechanics.length === 0) {
       await transaction.rollback();
@@ -320,18 +325,20 @@ exports.searchAppointments = async (req, res) => {
     const { 
       start_date, 
       end_date, 
-      customer_id, 
       status,
-      mechanic_id 
+      search_text
     } = req.query;
 
     const whereClause = {};
 
+    // Date range filter
     if (start_date && end_date) {
       whereClause.date = {
         [Op.between]: [start_date, end_date]
       };
     }
+    
+    // Status filter
     if (status) whereClause.status = status;
 
     // Role-based filters
@@ -339,41 +346,94 @@ exports.searchAppointments = async (req, res) => {
       whereClause.customer_id = req.user.id;
     } else if (req.user.role === 'mechanic') {
       whereClause.mechanic_id = req.user.id;
-    } else if (customer_id) {
-      whereClause.customer_id = customer_id;
     }
 
-    if (mechanic_id && req.user.role === 'secretary') {
-      whereClause.mechanic_id = mechanic_id;
+    // Build include clause
+    const includeClause = [
+      { 
+        model: User, 
+        as: 'appointmentCustomer',
+        attributes: ['id', 'full_name', 'email'],
+        include: [{
+          model: require('../models').Customer,
+          as: 'customerProfile',
+          attributes: ['afm']
+        }]
+      },
+      { 
+        model: User, 
+        as: 'appointmentMechanic',
+        attributes: ['id', 'full_name', 'email'] 
+      },
+      { 
+        model: Car,
+        as: 'car'
+      },
+      { 
+        model: Task,
+        as: 'tasks'
+      }
+    ];
+
+    let appointments;
+
+    if (search_text) {
+      // If there's search text, we need to filter by full name or AFM
+      // First, find customers that match the search
+      const matchingCustomers = await User.findAll({
+        where: {
+          full_name: { [Op.like]: `%${search_text}%` },
+          role: 'customer'
+        },
+        include: [{
+          model: require('../models').Customer,
+          as: 'customerProfile',
+          where: {
+            afm: { [Op.like]: `%${search_text}%` }
+          },
+          required: false
+        }],
+        attributes: ['id']
+      });
+
+      // Also find customers by AFM only
+      const afmCustomers = await require('../models').Customer.findAll({
+        where: {
+          afm: { [Op.like]: `%${search_text}%` }
+        },
+        attributes: ['user_id']
+      });
+
+      // Combine customer IDs
+      const customerIds = [
+        ...matchingCustomers.map(c => c.id),
+        ...afmCustomers.map(c => c.user_id)
+      ].filter((id, index, arr) => arr.indexOf(id) === index); // Remove duplicates
+
+      // Add customer filter to where clause
+      if (customerIds.length > 0) {
+        whereClause.customer_id = { [Op.in]: customerIds };
+      } else {
+        // If no customers match, return empty result
+        return res.json({
+          success: true,
+          data: []
+        });
+      }
     }
 
-    const appointments = await Appointment.findAll({
+    appointments = await Appointment.findAll({
       where: whereClause,
-      include: [
-        { 
-          model: User, 
-          as: 'appointmentCustomer',
-          attributes: ['id', 'full_name', 'email'] 
-        },
-        { 
-          model: User, 
-          as: 'appointmentMechanic',
-          attributes: ['id', 'full_name', 'email'] 
-        },
-        { 
-          model: Car,
-          as: 'car'
-        },
-        { 
-          model: Task,
-          as: 'tasks'
-        }
-      ],
+      include: includeClause,
       order: [['date', 'ASC'], ['start_time', 'ASC']]
     });
 
-    res.json(appointments);
+    res.json({
+      success: true,
+      data: appointments
+    });
   } catch (error) {
+    console.error('Search error:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -483,6 +543,94 @@ exports.assignMechanic = async (req, res) => {
   } catch (error) {
     await transaction.rollback();
     console.error('Error assigning mechanic:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+exports.startWork = async (req, res) => {
+  const transaction = await db.transaction();
+  
+  try {
+    const appointment = await Appointment.findByPk(req.params.id);
+    
+    console.log(`Starting work on appointment ${req.params.id}`);
+    console.log(`Appointment found:`, appointment ? {
+      id: appointment.id,
+      status: appointment.status,
+      mechanic_id: appointment.mechanic_id
+    } : 'null');
+    console.log(`Current user:`, { id: req.user.id, role: req.user.role });
+
+    if (!appointment) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'Appointment not found' });
+    }
+
+    // For mechanics, they can start work if:
+    // 1. They are assigned to the appointment (mechanic_id matches), OR
+    // 2. No mechanic is assigned yet and they want to take it
+    if (req.user.role === 'mechanic') {
+      if (appointment.mechanic_id && appointment.mechanic_id !== req.user.id) {
+        await transaction.rollback();
+        return res.status(403).json({ message: 'This appointment is assigned to another mechanic' });
+      }
+      
+      // If no mechanic assigned, assign current mechanic
+      if (!appointment.mechanic_id) {
+        await appointment.update({ mechanic_id: req.user.id }, { transaction });
+      }
+    }
+
+    // Allow starting work on created, assigned, or scheduled appointments
+    const allowedStatuses = ['created', 'assigned', 'scheduled'];
+    if (!allowedStatuses.includes(appointment.status)) {
+      await transaction.rollback();
+      return res.status(400).json({ 
+        message: `Cannot start work on appointments with status: ${appointment.status}. Must be created, assigned, or scheduled.`
+      });
+    }
+
+    await appointment.update({
+      status: 'in_progress'
+    }, { transaction });
+
+    await transaction.commit();
+    
+    const updatedAppointment = await Appointment.findByPk(req.params.id, {
+      include: [
+        {
+          model: User,
+          as: 'appointmentCustomer',
+          attributes: ['id', 'username', 'full_name', 'email']
+        },
+        {
+          model: User,
+          as: 'appointmentMechanic',
+          attributes: ['id', 'username', 'full_name', 'email']
+        },
+        {
+          model: Car,
+          as: 'car',
+          attributes: ['vin', 'brand', 'model', 'plate_number']
+        },
+        {
+          model: Task,
+          as: 'tasks'
+        }
+      ]
+    });
+
+    res.json({
+      success: true,
+      message: 'Work started successfully',
+      data: updatedAppointment
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Error starting work:', error);
     res.status(500).json({
       success: false,
       message: error.message

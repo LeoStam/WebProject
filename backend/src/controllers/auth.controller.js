@@ -147,8 +147,8 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         full_name: user.full_name,
-        profile: user.role === 'customer' ? user.customerProfile : 
-                user.role === 'mechanic' ? user.mechanicProfile : null
+        customerProfile: user.customerProfile,
+        mechanicProfile: user.mechanicProfile
       }
     });
   } catch (error) {
@@ -292,6 +292,68 @@ exports.checkAdmin = async (req, res) => {
       success: false,
       message: 'Error checking admin status',
       error: error.message
+    });
+  }
+};
+
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    console.log('Change password request for user ID:', req.user.id);
+    
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long'
+      });
+    }
+
+    // Get user from database
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await user.update({
+      password: hashedNewPassword
+    });
+
+    console.log('Password changed successfully for user:', user.username);
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
     });
   }
 };

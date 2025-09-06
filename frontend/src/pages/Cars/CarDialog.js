@@ -38,8 +38,9 @@ const createCarSchema = (isSecretary) => Yup.object().shape({
     .max(10, 'Too many doors')
     .required('Door count is required'),
   ...(isSecretary && {
-    owner_id: Yup.string()
+    owner_id: Yup.mixed()
       .required('Customer is required')
+      .test('not-empty', 'Customer is required', value => value !== '')
   })
 });
 
@@ -50,6 +51,8 @@ const CarDialog = ({ open, onClose, car }) => {
   const [loadingCustomers, setLoadingCustomers] = useState(false);
 
   const isSecretary = user?.role === 'secretary';
+  const isMechanic = user?.role === 'mechanic';
+  const isReadOnly = isMechanic; // Mechanics can only view car details
 
   useEffect(() => {
     if (open && isSecretary && !car) {
@@ -61,7 +64,7 @@ const CarDialog = ({ open, onClose, car }) => {
     setLoadingCustomers(true);
     try {
       const response = await api.get('/users');
-      const activeCustomers = response.data.data.filter(user => 
+      const activeCustomers = response.data.filter(user => 
         user.role === 'customer' && user.is_active
       );
       setCustomers(activeCustomers);
@@ -104,7 +107,9 @@ const CarDialog = ({ open, onClose, car }) => {
 
   return (
     <Dialog open={open} onClose={() => onClose(false)} maxWidth="sm" fullWidth>
-      <DialogTitle>{car ? 'Edit Car' : 'Add New Car'}</DialogTitle>
+      <DialogTitle>
+        {isReadOnly ? 'Car Details' : (car ? 'Edit Car' : 'Add New Car')}
+      </DialogTitle>
       <Formik
         initialValues={initialValues}
         validationSchema={createCarSchema(isSecretary)}
@@ -143,7 +148,7 @@ const CarDialog = ({ open, onClose, car }) => {
                 margin="normal"
                 name="vin"
                 label="VIN"
-                disabled={!!car}
+                disabled={!!car || isReadOnly}
                 value={values.vin}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -156,6 +161,7 @@ const CarDialog = ({ open, onClose, car }) => {
                 margin="normal"
                 name="brand"
                 label="Brand"
+                disabled={isReadOnly}
                 value={values.brand}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -168,6 +174,7 @@ const CarDialog = ({ open, onClose, car }) => {
                 margin="normal"
                 name="model"
                 label="Model"
+                disabled={isReadOnly}
                 value={values.model}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -181,6 +188,7 @@ const CarDialog = ({ open, onClose, car }) => {
                 name="production_year"
                 label="Production Year"
                 type="number"
+                disabled={isReadOnly}
                 value={values.production_year}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -194,6 +202,7 @@ const CarDialog = ({ open, onClose, car }) => {
                 select
                 name="vehicle_type"
                 label="Vehicle Type"
+                disabled={isReadOnly}
                 value={values.vehicle_type}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -212,6 +221,7 @@ const CarDialog = ({ open, onClose, car }) => {
                 select
                 name="fuel_type"
                 label="Fuel Type"
+                disabled={isReadOnly}
                 value={values.fuel_type}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -231,6 +241,7 @@ const CarDialog = ({ open, onClose, car }) => {
                 name="doors_count"
                 label="Number of Doors"
                 type="number"
+                disabled={isReadOnly}
                 value={values.doors_count}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -240,15 +251,17 @@ const CarDialog = ({ open, onClose, car }) => {
             </DialogContent>
             <DialogActions>
               <Button onClick={() => onClose(false)}>
-                Cancel
+                {isReadOnly ? 'Close' : 'Cancel'}
               </Button>
-              <Button
-                type="submit"
-                color="primary"
-                disabled={isSubmitting}
-              >
-                {car ? 'Update' : 'Add'}
-              </Button>
+              {!isReadOnly && (
+                <Button
+                  type="submit"
+                  color="primary"
+                  disabled={isSubmitting}
+                >
+                  {car ? 'Update' : 'Add'}
+                </Button>
+              )}
             </DialogActions>
           </Form>
         )}

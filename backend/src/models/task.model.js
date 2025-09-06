@@ -8,6 +8,14 @@ const Task = sequelize.define('Task', {
     primaryKey: true,
     autoIncrement: true
   },
+  appointment_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'appointments',
+      key: 'id'
+    }
+  },
   description: {
     type: DataTypes.TEXT,
     allowNull: false

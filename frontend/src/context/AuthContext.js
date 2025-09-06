@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
         if (decoded.exp * 1000 > Date.now()) {
           try {
             const response = await authService.getCurrentUser();
+            console.log('AuthContext - getCurrentUser response:', response.data);
             setUser(response.data);
           } catch (error) {
             if (!rememberMe) {
@@ -38,6 +39,7 @@ export const AuthProvider = ({ children }) => {
     const response = await authService.login(credentials);
     localStorage.setItem('token', response.data.token);
     localStorage.setItem('rememberMe', rememberMe);
+    console.log('AuthContext - login response user:', response.data.user);
     setUser(response.data.user);
     return response.data;
   };
@@ -52,15 +54,47 @@ export const AuthProvider = ({ children }) => {
     return await authService.resetPassword(email);
   };
 
+  const changePassword = async (passwordData) => {
+    return await authService.changePassword(passwordData);
+  };
+
+  const updateUser = async (userData) => {
+    console.log('🚀 AuthContext - updateUser called with:', userData);
+    
+    const response = await authService.updateProfile(userData);
+    console.log('🚀 AuthContext - updateUser response:', response.data);
+    
+    // Update the user state with the new data from the response
+    if (response.data && response.data.data) {
+      console.log('🚀 AuthContext - Setting user from response data:', response.data.data);
+      setUser(response.data.data);
+    }
+    
+    // Also refresh user data from server to ensure we have latest data
+    try {
+      console.log('🚀 AuthContext - Calling getCurrentUser to refresh data...');
+      const refreshResponse = await authService.getCurrentUser();
+      console.log('🚀 AuthContext - getCurrentUser response:', refreshResponse.data);
+      console.log('🚀 AuthContext - Customer profile from getCurrentUser:', refreshResponse.data.customerProfile);
+      console.log('🚀 AuthContext - Setting refreshed user data');
+      setUser(refreshResponse.data);
+    } catch (error) {
+      console.error('❌ Failed to refresh user data:', error);
+    }
+    
+    return response.data;
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
-      loading, 
       login, 
-      logout,
-      resetPassword 
+      logout, 
+      resetPassword,
+      changePassword,
+      updateUser
     }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

@@ -8,12 +8,17 @@ import {
   Button,
   TextField,
   Grid,
-  MenuItem
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  FormHelperText
 } from '@mui/material';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import { useSnackbar } from 'notistack';
 import api from '../../services/api.service';
+import { MECHANIC_SPECIALTIES } from '../../utils/constants';
 
 const userSchema = Yup.object().shape({
   username: Yup.string()
@@ -63,9 +68,9 @@ const UserDialog = ({ open, onClose, user }) => {
   const initialValues = user ? {
     ...user,
     password: '', // Don't show existing password
-    specialty: user.Mechanic?.specialty || '',
-    afm: user.Customer?.afm || '',
-    address: user.Customer?.address || ''
+    specialty: user.mechanicProfile?.specialty || '',
+    afm: user.customerProfile?.afm || '',
+    address: user.customerProfile?.address || ''
   } : {
     username: '',
     email: '',
@@ -203,16 +208,29 @@ const UserDialog = ({ open, onClose, user }) => {
 
                 {values.role === 'mechanic' && (
                   <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      name="specialty"
-                      label="Specialty"
-                      value={values.specialty}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
+                    <FormControl 
+                      fullWidth 
                       error={touched.specialty && Boolean(errors.specialty)}
-                      helperText={touched.specialty && errors.specialty}
-                    />
+                    >
+                      <InputLabel id="specialty-label">Specialty</InputLabel>
+                      <Select
+                        labelId="specialty-label"
+                        name="specialty"
+                        value={MECHANIC_SPECIALTIES.find(spec => spec.value === values.specialty) ? values.specialty : ''}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        label="Specialty"
+                      >
+                        {MECHANIC_SPECIALTIES.map((specialty) => (
+                          <MenuItem key={specialty.value} value={specialty.value}>
+                            {specialty.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {touched.specialty && errors.specialty && (
+                        <FormHelperText>{errors.specialty}</FormHelperText>
+                      )}
+                    </FormControl>
                   </Grid>
                 )}
 

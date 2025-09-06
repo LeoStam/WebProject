@@ -28,6 +28,7 @@ const userRoutes = require('./routes/user.routes');
 const carRoutes = require('./routes/car.routes');
 const appointmentRoutes = require('./routes/appointment.routes');
 const statsRoutes = require('./routes/stats.routes');
+const taskRoutes = require('./routes/task.routes');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -35,6 +36,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/cars', carRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/tasks', taskRoutes);
 //-------------------------
 
 // Test database connection and initialize data

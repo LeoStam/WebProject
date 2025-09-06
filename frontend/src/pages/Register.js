@@ -9,12 +9,17 @@ import {
   Container,
   Box,
   MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  FormHelperText,
   Stepper,
   Step,
   StepLabel
 } from '@mui/material';
 import { Alert } from '@mui/material';
 import { registerSchema } from '../utils/validationSchemas';
+import { MECHANIC_SPECIALTIES } from '../utils/constants';
 import { authService } from '../services/api.service';
 
 const steps = ['Basic Information', 'Account Details', 'Role Specific Details'];
@@ -55,8 +60,8 @@ const Register = () => {
       }
       
       if (values.role === 'mechanic') {
-        if (!values.specialty || values.specialty.length < 3) {
-          setError('Specialty is required and must be at least 3 characters for mechanics');
+        if (!values.specialty) {
+          setError('Specialty is required for mechanics');
           setSubmitting(false);
           return;
         }
@@ -200,17 +205,25 @@ const Register = () => {
               </>
             )}
             {values.role === 'mechanic' && (
-              <TextField
-                fullWidth
-                margin="normal"
-                name="specialty"
-                label="Specialty"
-                error={touched.specialty && Boolean(errors.specialty)}
-                helperText={touched.specialty && errors.specialty}
-                value={values.specialty}
-                onChange={handleChange}
-                onBlur={handleBlur}
-              />
+              <FormControl fullWidth margin="normal" error={touched.specialty && Boolean(errors.specialty)}>
+                <InputLabel>Specialty</InputLabel>
+                <Select
+                  name="specialty"
+                  value={values.specialty}
+                  onChange={handleChange}
+                  label="Specialty"
+                >
+                  <MenuItem value="">Select a specialty</MenuItem>
+                  {MECHANIC_SPECIALTIES.map((specialty) => (
+                    <MenuItem key={specialty.value} value={specialty.value}>
+                      {specialty.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {touched.specialty && errors.specialty && (
+                  <FormHelperText>{errors.specialty}</FormHelperText>
+                )}
+              </FormControl>
             )}
           </>
         );

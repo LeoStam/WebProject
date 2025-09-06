@@ -1,5 +1,5 @@
 // src/pages/Appointments/AppointmentsList.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Paper,
   Table,
@@ -12,16 +12,32 @@ import {
   IconButton,
   Typography,
   Chip,
+  TextField,
+  Grid,
+  Card,
+  CardContent,
+  MenuItem,
+  InputAdornment,
+  Collapse,
   styled
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import CancelIcon from '@mui/icons-material/Cancel';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ClearIcon from '@mui/icons-material/Clear';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useSnackbar } from 'notistack';
 import { format } from 'date-fns';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api.service';
 import AppointmentDialog from './AppointmentDialog';
+import AppointmentDetailsDialog from './AppointmentDetailsDialog';
 
 const Header = styled('div')(({ theme }) => ({
   display: 'flex',
@@ -55,11 +71,32 @@ const AppointmentsList = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedAppointmentForDetails, setSelectedAppointmentForDetails] = useState(null);
 
-  const fetchAppointments = async () => {
+  // Search and filter state
+  const [searchFilters, setSearchFilters] = useState({
+  search_text: '',
+  status: '',
+  start_date: '',
+  end_date: ''
+  });
+  const [showFilters, setShowFilters] = useState(false);
+  const [customers, setCustomers] = useState([]);
+  const [mechanics, setMechanics] = useState([]);
+
+  const fetchAppointments = async (filters = {}) => {
     try {
-      const response = await api.get('/appointments');
-      setAppointments(response.data.data || []);
+  const hasFilters = Object.values(filters).some(value => value !== '');
+  const endpoint = hasFilters ? '/appointments/search' : '/appointments';
+  // Only send relevant filters to backend
+  const params = {};
+  if (filters.status) params.status = filters.status;
+  if (filters.start_date) params.start_date = filters.start_date;
+  if (filters.end_date) params.end_date = filters.end_date;
+  if (filters.search_text) params.search_text = filters.search_text;
+  const response = await api.get(endpoint, { params });
+  setAppointments(response.data.data || []);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       enqueueSnackbar('Failed to fetch appointments', { variant: 'error' });
@@ -69,8 +106,68 @@ const AppointmentsList = () => {
     }
   };
 
+  const fetchUsersForFilters = async () => {
+    if (user?.role === 'secretary') {
+      try {
+        const [customersRes, mechanicsRes] = await Promise.all([
+          api.get('/users?role=customer'),
+          api.get('/users?role=mechanic')
+        ]);
+        setCustomers(customersRes.data.data || []);
+        setMechanics(mechanicsRes.data.data || []);
+      } catch (error) {
+        console.error('Error fetching users for filters:', error);
+      }
+    }
+  };
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((filters) => {
+      fetchAppointments(filters);
+    }, 500),
+    []
+  );
+
+  const handleFilterChange = (field, value) => {
+    const newFilters = { ...searchFilters, [field]: value };
+    setSearchFilters(newFilters);
+    
+    // For text search, use debounced search; for dropdowns, search immediately
+    if (field === 'search_text') {
+      debouncedSearch(newFilters);
+    } else {
+      fetchAppointments(newFilters);
+    }
+  };
+
+  const clearFilters = () => {
+    const clearedFilters = {
+      search_text: '',
+      status: '',
+      start_date: '',
+      end_date: ''
+    };
+    setSearchFilters(clearedFilters);
+    fetchAppointments();
+  };
+
+  // Simple debounce utility
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
   useEffect(() => {
     fetchAppointments();
+    fetchUsersForFilters();
   }, []);
 
   const handleAdd = () => {
@@ -83,6 +180,11 @@ const AppointmentsList = () => {
     setDialogOpen(true);
   };
 
+  const handleViewDetails = (appointment) => {
+    setSelectedAppointmentForDetails(appointment);
+    setDetailsDialogOpen(true);
+  };
+
   const handleCancel = async (appointment) => {
     if (window.confirm('Are you sure you want to cancel this appointment?')) {
       try {
@@ -91,6 +193,33 @@ const AppointmentsList = () => {
         fetchAppointments();
       } catch (error) {
         enqueueSnackbar('Failed to cancel appointment', { variant: 'error' });
+      }
+    }
+  };
+
+  const handleStartWork = async (appointment) => {
+    try {
+      await api.patch(`/appointments/${appointment.id}/start`);
+      enqueueSnackbar('Work started successfully', { variant: 'success' });
+      fetchAppointments();
+    } catch (error) {
+      console.error('Error starting work:', error);
+      const message = error.response?.data?.message || 'Failed to start work';
+      enqueueSnackbar(message, { variant: 'error' });
+    }
+  };
+
+  const handleCompleteWork = async (appointment) => {
+    if (window.confirm('Mark this appointment as completed?')) {
+      try {
+        await api.put(`/appointments/${appointment.id}`, { 
+          ...appointment, 
+          status: 'completed' 
+        });
+        enqueueSnackbar('Appointment completed successfully', { variant: 'success' });
+        fetchAppointments();
+      } catch (error) {
+        enqueueSnackbar('Failed to complete appointment', { variant: 'error' });
       }
     }
   };
@@ -113,14 +242,37 @@ const AppointmentsList = () => {
 
   const canEdit = (appointment) => {
     if (user.role === 'secretary') return true;
-    if (user.role === 'mechanic' && appointment.status === 'in_progress') return true;
-    if (user.role === 'customer' && appointment.status === 'created') return true;
+    
+    if (user.role === 'mechanic') {
+      // Mechanics can only edit appointments they are assigned to and that are in progress
+      return appointment.status === 'in_progress' && 
+             appointment.mechanic_id === user.id;
+    }
+    
+    if (user.role === 'customer') {
+      // Customers can only edit their own appointments that are still 'created'
+      return appointment.status === 'created' && 
+             appointment.customer_id === user.id;
+    }
+    
     return false;
   };
 
   const canCancel = (appointment) => {
-    return appointment.status === 'created' || 
-           (user.role === 'secretary' && appointment.status !== 'completed');
+    // Only customers and secretaries can cancel appointments
+    if (user.role === 'mechanic') return false;
+    
+    if (user.role === 'customer') {
+      // Customers can only cancel their own appointments that are still 'created'
+      return appointment.status === 'created' && appointment.customer_id === user.id;
+    }
+    
+    if (user.role === 'secretary') {
+      // Secretaries can cancel any appointment that's not completed
+      return appointment.status !== 'completed';
+    }
+    
+    return false;
   };
 
   if (loading) {
@@ -131,15 +283,87 @@ const AppointmentsList = () => {
     <>
       <Header>
         <Typography variant="h5">Appointments</Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleAdd}
-        >
-          New Appointment
-        </Button>
+        {(user?.role === 'customer' || user?.role === 'secretary') && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={handleAdd}
+          >
+            New Appointment
+          </Button>
+        )}
       </Header>
+
+        {/* Search & Filter UI */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} md={4}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  label="Search by Full Name or AFM"
+                  value={searchFilters.search_text}
+                  onChange={e => handleFilterChange('search_text', e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </Grid>
+              <Grid item xs={6} md={2}>
+                <TextField
+                  select
+                  fullWidth
+                  label="Status"
+                  value={searchFilters.status}
+                  onChange={e => handleFilterChange('status', e.target.value)}
+                >
+                  <MenuItem value="">All</MenuItem>
+                  <MenuItem value="created">Created</MenuItem>
+                  <MenuItem value="in_progress">In Progress</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                  <MenuItem value="cancelled">Cancelled</MenuItem>
+                </TextField>
+              </Grid>
+              <Grid item xs={6} md={2}>
+                <TextField
+                  type="date"
+                  fullWidth
+                  label="Start Date"
+                  InputLabelProps={{ shrink: true }}
+                  value={searchFilters.start_date}
+                  onChange={e => handleFilterChange('start_date', e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={6} md={2}>
+                <TextField
+                  type="date"
+                  fullWidth
+                  label="End Date"
+                  InputLabelProps={{ shrink: true }}
+                  value={searchFilters.end_date}
+                  onChange={e => handleFilterChange('end_date', e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} md={1}>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  startIcon={<ClearIcon />}
+                  onClick={clearFilters}
+                  fullWidth
+                >
+                  Clear
+                </Button>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
       <TableContainer component={Paper}>
         <StyledTable>
@@ -179,13 +403,57 @@ const AppointmentsList = () => {
                   <TableCell>{appointment.reason}</TableCell>
                   <TableCell>{getStatusChip(appointment.status)}</TableCell>
                   <TableCell>
+                    {/* View Details button - always available */}
+                    <IconButton 
+                      onClick={() => handleViewDetails(appointment)}
+                      color="info"
+                      title="View Details"
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
+                    
+                    {/* Standard edit button */}
                     {canEdit(appointment) && (
-                      <IconButton onClick={() => handleEdit(appointment)}>
+                      <IconButton 
+                        onClick={() => handleEdit(appointment)}
+                        title="Edit Appointment"
+                      >
                         <EditIcon />
                       </IconButton>
                     )}
+                    
+                    {/* Mechanic status controls - only for assigned appointments */}
+                    {user?.role === 'mechanic' && 
+                     appointment.mechanic_id === user.id && 
+                     appointment.status === 'created' && (
+                      <IconButton 
+                        onClick={() => handleStartWork(appointment)}
+                        color="primary"
+                        title="Start Work"
+                      >
+                        <PlayArrowIcon />
+                      </IconButton>
+                    )}
+                    
+                    {user?.role === 'mechanic' && 
+                     appointment.mechanic_id === user.id && 
+                     appointment.status === 'in_progress' && (
+                      <IconButton 
+                        onClick={() => handleCompleteWork(appointment)}
+                        color="success"
+                        title="Complete Work"
+                      >
+                        <CheckCircleIcon />
+                      </IconButton>
+                    )}
+                    
+                    {/* Cancel button */}
                     {canCancel(appointment) && (
-                      <IconButton onClick={() => handleCancel(appointment)}>
+                      <IconButton 
+                        onClick={() => handleCancel(appointment)}
+                        color="error"
+                        title="Cancel Appointment"
+                      >
                         <CancelIcon />
                       </IconButton>
                     )}
@@ -197,13 +465,23 @@ const AppointmentsList = () => {
         </StyledTable>
       </TableContainer>
 
-      <AppointmentDialog
+            <AppointmentDialog
         open={dialogOpen}
         onClose={(refreshList) => {
           setDialogOpen(false);
           if (refreshList) fetchAppointments();
         }}
         appointment={selectedAppointment}
+      />
+
+      <AppointmentDetailsDialog
+        open={detailsDialogOpen}
+        onClose={() => {
+          setDetailsDialogOpen(false);
+          setSelectedAppointmentForDetails(null);
+          fetchAppointments(); // Refresh list in case tasks were updated
+        }}
+        appointment={selectedAppointmentForDetails}
       />
     </>
   );

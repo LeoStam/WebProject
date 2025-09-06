@@ -1,4 +1,5 @@
 import * as Yup from 'yup';
+import { MECHANIC_SPECIALTIES } from './constants';
 
 export const loginSchema = Yup.object().shape({
   email: Yup.string()
@@ -37,5 +38,12 @@ export const registerSchema = Yup.object().shape({
     .required('ID number is required'),
   role: Yup.string()
     .oneOf(['customer', 'mechanic'], 'Invalid role')
-    .required('Role is required')
+    .required('Role is required'),
+  specialty: Yup.string()
+    .when('role', {
+      is: 'mechanic',
+      then: (schema) => schema
+        .oneOf(MECHANIC_SPECIALTIES.map(s => s.value), 'Please select a valid specialty')
+        .required('Specialty is required for mechanics')
+    })
 });

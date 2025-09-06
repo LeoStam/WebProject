@@ -15,42 +15,53 @@ import * as Yup from 'yup';
 import { useSnackbar } from 'notistack';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api.service';
-
-const appointmentSchema = Yup.object().shape({
-  date: Yup.date()
-    .min(new Date(), 'Date cannot be in the past')
-    .required('Date is required'),
-  start_time: Yup.string()
-    .matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format')
-    .required('Time is required'),
-  reason: Yup.string()
-    .oneOf(['repair', 'service'], 'Invalid reason')
-    .required('Reason is required'),
-  car_vin: Yup.string()
-    .required('Car is required'),
-  problem_description: Yup.string()
-    .when('reason', {
-      is: 'repair',
-      then: Yup.string().required('Problem description is required for repairs')
-    })
-});
+import TaskManager from '../../components/TaskManager';
 
 const AppointmentDialog = ({ open, onClose, appointment }) => {
   const { enqueueSnackbar } = useSnackbar();
   const { user } = useAuth();
   const [cars, setCars] = useState([]);
   const [mechanics, setMechanics] = useState([]);
+  const [customers, setCustomers] = useState([]);
+
+  const appointmentSchema = Yup.object().shape({
+    date: Yup.date()
+      .min(new Date(), 'Date cannot be in the past')
+      .required('Date is required'),
+    start_time: Yup.string()
+      .oneOf(['08:00', '10:00', '12:00', '14:00'], 'Please select a valid time slot')
+      .required('Time is required'),
+    reason: Yup.string()
+      .oneOf(['repair', 'service'], 'Invalid reason')
+      .required('Reason is required'),
+    car_vin: Yup.string()
+      .required('Car is required'),
+    problem_description: Yup.string(),
+    ...(user.role === 'secretary' && {
+      customer_id: Yup.string().required('Customer is required')
+    })
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [carsRes, mechanicsRes] = await Promise.all([
-          api.get('/cars'),
-          user.role === 'secretary' ? api.get('/users?role=mechanic') : null
-        ]);
+        const requests = [
+          user.role === 'secretary' ? api.get('/users?role=customer') : null,
+          user.role === 'secretary' ? api.get('/cars') : api.get('/cars')
+        ].filter(Boolean);
+
+        const responses = await Promise.all(requests);
         
-        setCars(carsRes.data);
-        if (mechanicsRes) {
+        if (user.role === 'secretary') {
+          setCustomers(responses[0]?.data || []);
+          setCars(responses[1]?.data || []);
+        } else {
+          setCars(responses[0]?.data || []);
+        }
+
+        // Fetch mechanics for secretaries
+        if (user.role === 'secretary') {
+          const mechanicsRes = await api.get('/users?role=mechanic');
           setMechanics(mechanicsRes.data);
         }
       } catch (error) {
@@ -58,23 +69,33 @@ const AppointmentDialog = ({ open, onClose, appointment }) => {
       }
     };
 
-    fetchData();
-  }, [user.role]);
+    if (open) {
+      fetchData();
+    }
+  }, [user.role, open]);
 
   const initialValues = appointment ? {
     ...appointment,
     date: appointment.date.split('T')[0]
   } : {
     date: new Date().toISOString().split('T')[0],
-    start_time: '09:00',
+    start_time: '08:00',
     reason: 'service',
     car_vin: '',
     problem_description: '',
-    mechanic_id: ''
+    mechanic_id: '',
+    customer_id: user.role === 'secretary' ? '' : user.id
   };
 
-  const handleSubmit = async (values, { setSubmitting }) => {
+  const handleSubmit = async (values, { setSubmitting, setFieldError }) => {
     try {
+      // Custom validation for repair appointments
+      if (values.reason === 'repair' && (!values.problem_description || values.problem_description.trim().length < 5)) {
+        setFieldError('problem_description', 'Problem description is required for repairs and must be at least 5 characters');
+        setSubmitting(false);
+        return;
+      }
+
       if (appointment) {
         await api.put(`/appointments/${appointment.id}`, values);
         enqueueSnackbar('Appointment updated successfully', { variant: 'success' });
@@ -105,6 +126,29 @@ const AppointmentDialog = ({ open, onClose, appointment }) => {
           <Form>
             <DialogContent>
               <Grid container spacing={2}>
+                {user.role === 'secretary' && (
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      select
+                      margin="normal"
+                      name="customer_id"
+                      label="Customer"
+                      value={values.customer_id}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      error={touched.customer_id && Boolean(errors.customer_id)}
+                      helperText={touched.customer_id && errors.customer_id}
+                    >
+                      {customers.map((customer) => (
+                        <MenuItem key={customer.id} value={customer.id}>
+                          {customer.full_name} ({customer.email})
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                )}
+
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
@@ -124,17 +168,21 @@ const AppointmentDialog = ({ open, onClose, appointment }) => {
                 <Grid item xs={12} md={6}>
                   <TextField
                     fullWidth
+                    select
                     margin="normal"
                     name="start_time"
                     label="Time"
-                    type="time"
-                    InputLabelProps={{ shrink: true }}
                     value={values.start_time}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     error={touched.start_time && Boolean(errors.start_time)}
                     helperText={touched.start_time && errors.start_time}
-                  />
+                  >
+                    <MenuItem value="08:00">08:00 - 10:00</MenuItem>
+                    <MenuItem value="10:00">10:00 - 12:00</MenuItem>
+                    <MenuItem value="12:00">12:00 - 14:00</MenuItem>
+                    <MenuItem value="14:00">14:00 - 16:00</MenuItem>
+                  </TextField>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
@@ -168,11 +216,13 @@ const AppointmentDialog = ({ open, onClose, appointment }) => {
                     error={touched.car_vin && Boolean(errors.car_vin)}
                     helperText={touched.car_vin && errors.car_vin}
                   >
-                    {cars.map((car) => (
-                      <MenuItem key={car.vin} value={car.vin}>
-                        {`${car.brand} ${car.model} (${car.vin})`}
-                      </MenuItem>
-                    ))}
+                    {cars
+                      .filter(car => user.role !== 'secretary' || car.owner_id === values.customer_id)
+                      .map((car) => (
+                        <MenuItem key={car.vin} value={car.vin}>
+                          {`${car.brand} ${car.model} (${car.vin})`}
+                        </MenuItem>
+                      ))}
                   </TextField>
                 </Grid>
 
@@ -217,6 +267,11 @@ const AppointmentDialog = ({ open, onClose, appointment }) => {
                   </Grid>
                 )}
               </Grid>
+
+              {/* Task Manager - Only show for in_progress appointments when editing */}
+              {appointment && appointment.status === 'in_progress' && (
+                <TaskManager appointment={appointment} />
+              )}
             </DialogContent>
 
             <DialogActions>

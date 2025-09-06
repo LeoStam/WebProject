@@ -16,7 +16,9 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useSnackbar } from 'notistack';
+import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api.service';
 import CarDialog from './CarDialog';
 
@@ -33,6 +35,7 @@ const StyledTable = styled(Table)({
 
 const CarsList = () => {
   const { enqueueSnackbar } = useSnackbar();
+  const { user } = useAuth();
   const [cars, setCars] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState(null);
@@ -60,6 +63,11 @@ const CarsList = () => {
     setDialogOpen(true);
   };
 
+  const handleView = (car) => {
+    setSelectedCar(car);
+    setDialogOpen(true);
+  };
+
   const handleDelete = async (car) => {
     if (window.confirm('Are you sure you want to delete this car?')) {
       try {
@@ -79,18 +87,33 @@ const CarsList = () => {
     }
   };
 
+  // Permission checks
+  const canAdd = () => user?.role === 'customer' || user?.role === 'secretary';
+  const canEdit = (car) => {
+    if (user?.role === 'secretary') return true;
+    if (user?.role === 'customer' && car?.owner?.id === user?.id) return true;
+    return false;
+  };
+  const canDelete = (car) => {
+    if (user?.role === 'secretary') return true;
+    if (user?.role === 'customer' && car?.owner?.id === user?.id) return true;
+    return false;
+  };
+
   return (
     <>
       <Header>
         <Typography variant="h5">Cars</Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleAdd}
-        >
-          Add Car
-        </Button>
+        {canAdd() && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={handleAdd}
+          >
+            Add Car
+          </Button>
+        )}
       </Header>
 
       <TableContainer component={Paper}>
@@ -114,12 +137,32 @@ const CarsList = () => {
                 <TableCell>{car.production_year}</TableCell>
                 <TableCell>{car.vehicle_type}</TableCell>
                 <TableCell>
-                  <IconButton onClick={() => handleEdit(car)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDelete(car)}>
-                    <DeleteIcon />
-                  </IconButton>
+                  {/* Mechanics can only view, others can edit if they have permission */}
+                  {user?.role === 'mechanic' ? (
+                    <IconButton 
+                      onClick={() => handleView(car)}
+                      title="View Details"
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
+                  ) : canEdit(car) && (
+                    <IconButton 
+                      onClick={() => handleEdit(car)}
+                      title="Edit Car"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  )}
+                  
+                  {canDelete(car) && (
+                    <IconButton 
+                      onClick={() => handleDelete(car)}
+                      title="Delete Car"
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
